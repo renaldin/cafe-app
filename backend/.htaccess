@@ -1,0 +1,18 @@
+# =====================================================================
+# ALTERNATIF jika document root subdomain TIDAK bisa diarahkan ke /public
+# Taruh seluruh isi folder backend di document root subdomain (mis. public_html/api)
+# dan file ini akan meneruskan semua request ke folder public/.
+# =====================================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Lindungi file sensitif bila diakses langsung
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|artisan|package\.json|phpunit\.xml)$">
+    Require all denied
+</FilesMatch>

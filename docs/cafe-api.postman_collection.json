@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "Cafe POS API v1",
+    "description": "Koleksi endpoint utama. Jalankan 'Auth > Login' dulu: token otomatis disimpan ke variabel {{token}}. Set {{tableToken}} dari menu Meja (QR).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "tableToken", "value": "" },
+    { "key": "trackingKey", "value": "" },
+    { "key": "billId", "value": "1" }
+  ],
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+  "item": [
+    {
+      "name": "Publik",
+      "auth": { "type": "noauth" },
+      "item": [
+        { "name": "Info toko", "request": { "method": "GET", "url": "{{baseUrl}}/public/store" } },
+        { "name": "Katalog menu", "request": { "method": "GET", "url": "{{baseUrl}}/public/menu" } },
+        { "name": "Info meja", "request": { "method": "GET", "url": "{{baseUrl}}/public/tables/{{tableToken}}" } },
+        {
+          "name": "Kirim pesanan (dine-in)",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('trackingKey', pm.response.json().data.tracking_key);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/public/orders",
+            "body": { "mode": "raw", "raw": "{\n  \"table_token\": \"{{tableToken}}\",\n  \"items\": [ { \"menu_id\": 21, \"qty\": 2 } ]\n}" }
+          }
+        },
+        { "name": "Lacak pesanan", "request": { "method": "GET", "url": "{{baseUrl}}/public/track/{{trackingKey}}" } },
+        {
+          "name": "Panggil pelayan",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/public/tables/{{tableToken}}/call", "body": { "mode": "raw", "raw": "{ \"type\": \"waiter\" }" } }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "auth": { "type": "noauth" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));", "pm.collectionVariables.set('token', pm.response.json().data.token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/auth/login", "body": { "mode": "raw", "raw": "{ \"username\": \"owner\", \"password\": \"GantiPassword123!\" }" } }
+        },
+        { "name": "Profil saya", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } }
+      ]
+    },
+    {
+      "name": "Operasional",
+      "item": [
+        { "name": "Feed kasir", "request": { "method": "GET", "url": "{{baseUrl}}/orders/feed" } },
+        { "name": "KDS", "request": { "method": "GET", "url": "{{baseUrl}}/kds?station=all" } },
+        { "name": "Buka shift", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/shifts/open", "body": { "mode": "raw", "raw": "{ \"opening_cash\": 200000 }" } } },
+        { "name": "Detail bill", "request": { "method": "GET", "url": "{{baseUrl}}/bills/{{billId}}" } },
+        {
+          "name": "Bayar tunai",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/bills/{{billId}}/payments", "body": { "mode": "raw", "raw": "{ \"payments\": [ { \"method\": \"cash\", \"amount\": 0, \"received\": 100000 } ] }" } }
+        },
+        { "name": "Dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/dashboard/summary" } },
+        { "name": "Laporan penjualan", "request": { "method": "GET", "url": "{{baseUrl}}/reports/sales?from=2026-11-01&to=2026-11-30" } }
+      ]
+    }
+  ]
+}
